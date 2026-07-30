@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<title>Live Sales Tracker</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #1a1d24;
+    --accent: #4f8cff;
+    --accent-dark: #3a6fd8;
+    --text: #f2f3f5;
+    --muted: #9aa0ac;
+    --danger: #ff5c5c;
+    --success: #35c56a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 16px 16px 8px;
+    text-align: center;
+  }
+  header h1 {
+    font-size: 1.3rem;
+    margin: 0 0 4px;
+  }
+  header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  /* ---- staff selector ---- */
+  #staffSelector {
+    margin: 14px 16px 0;
+    display: flex;
+    gap: 10px;
+  }
+  #staffSelector button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #staffSelector button.active {
+    background: var(--accent);
+    color: white;
+  }
+
+  /* ---- summary cards ---- */
+  #summary {
+    margin: 14px 16px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  #summary .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  #summary .card .label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+  }
+  #summary .card .value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin-top: 4px;
+  }
+  #summary .card.commission .value { color: var(--accent); }
+
+  /* ---- entry form ---- */
+  #form-card {
+    margin: 14px 16px 0;
+    background: var(--card);
+    border-radius: 14px;
+    padding: 16px;
+  }
+  #form-card h2 {
+    font-size: 0.95rem;
+    margin: 0 0 12px;
+  }
+  .field-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  .field-wrap label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--accent);
+  }
+  .field-wrap input, .field-wrap select {
+    background: #11141b;
+    border: 1px solid #2a2e38;
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    width: 100%;
+  }
+  #commissionPreview {
+    background: #11141b;
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    font-size: 0.9rem;
+  }
+  #commissionPreview .amt {
+    font-weight: 800;
+    color: var(--accent);
+    font-size: 1.05rem;
+  }
+  #addBtn {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent);
+    color: white;
+    font-size: 0.98rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #addBtn:active { opacity: 0.8; }
+  #status {
+    padding: 8px 16px 0;
+    min-height: 18px;
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  #status.ok { color: var(--success); }
+  #status.err { color: var(--danger); }
+
+  /* ---- history ---- */
+  section#history {
+    margin: 18px 16px 28px;
+  }
+  #history-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+  #history-head h2 {
+    font-size: 1rem;
+    margin: 0;
+  }
+  #history-actions { display: flex; gap: 8px; }
+  #history-actions button {
+    flex: none;
+    padding: 7px 12px;
+    font-size: 0.78rem;
+    border: none;
+    border-radius: 8px;
+    background: #2a2e38;
+    color: var(--text);
+    cursor: pointer;
+  }
+  #history-actions #clearBtn { background: #3a1f22; color: var(--danger); }
+
+  #filterRow {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  #filterRow select {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid #2a2e38;
+    color: var(--text);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+  }
+
+  ul#entryList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  ul#entryList li {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  ul#entryList li .info { min-width: 0; flex: 1; }
+  ul#entryList li .staffName {
+    font-weight: 800;
+    font-size: 0.98rem;
+  }
+  ul#entryList li .dt {
+    color: var(--muted);
+    font-size: 0.75rem;
+    margin-top: 2px;
+  }
+  ul#entryList li .amts {
+    display: flex;
+    gap: 14px;
+    margin-top: 6px;
+    font-size: 0.85rem;
+  }
+  ul#entryList li .amts .sales { font-weight: 700; }
+  ul#entryList li .amts .comm { color: var(--accent); font-weight: 700; }
+  ul#entryList li .item-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: none;
+  }
+  ul#entryList li .item-actions button {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    flex: none;
+    padding: 4px 8px;
+    font-size: 0.9rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  ul#entryList li .item-actions button.del { color: var(--danger); }
+  ul#entryList li .item-actions button.edit { color: var(--accent); }
+  #empty {
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 24px 0;
+  }
+
+  /* ---- edit row (reuses entry li) ---- */
+  .edit-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+  .edit-row .field-wrap { margin-bottom: 0; }
+  .edit-row .edit-buttons {
+    display: flex;
+    gap: 8px;
+  }
+  .edit-row .edit-buttons button {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .edit-row .save-btn { background: var(--accent); color: white; }
+  .edit-row .cancel-btn { background: #2a2e38; color: var(--text); }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>📊 Live Sales Tracker</h1>
+    <p>Key in your sales for each live</p>
+  </header>
+
+  <div id="staffSelector">
+    <button id="staffParvana" data-name="Parvana">Parvana</button>
+    <button id="staffGhandi" data-name="Ghandi">Ghandi</button>
+  </div>
+
+  <div id="summary">
+    <div class="card">
+      <div class="label">Total Sales</div>
+      <div class="value" id="sumSales">RM 0.00</div>
+    </div>
+    <div class="card commission">
+      <div class="label">Total Commission</div>
+      <div class="value" id="sumCommission">RM 0.00</div>
+    </div>
+  </div>
+
+  <div id="form-card">
+    <h2>Log a Live</h2>
+
+    <div class="field-wrap">
+      <label for="dateInput">Date</label>
+      <input type="date" id="dateInput" />
+    </div>
+
+    <div class="field-wrap">
+      <label for="timeInput">Time</label>
+      <input type="time" id="timeInput" />
+    </div>
+
+    <div class="field-wrap">
+      <label for="salesInput">Total Sales (RM)</label>
+      <input type="number" id="salesInput" placeholder="e.g. 250.00" min="0" step="0.01" inputmode="decimal" />
+    </div>
+
+    <div id="commissionPreview">
+      <span>Commission (2%)</span>
+      <span class="amt" id="commissionPreviewAmt">RM 0.00</span>
+    </div>
+
+    <button id="addBtn">+ Add Entry</button>
+  </div>
+  <div id="status"></div>
+
+  <section id="history">
+    <div id="history-head">
+      <h2>Sales Log</h2>
+      <div id="history-actions">
+        <button id="exportBtn">Export CSV</button>
+        <button id="clearBtn">Clear</button>
+      </div>
+    </div>
+    <div id="filterRow">
+      <select id="staffFilter">
+        <option value="">All Staff</option>
+        <option value="Parvana">Parvana</option>
+        <option value="Ghandi">Ghandi</option>
+      </select>
+    </div>
+    <ul id="entryList"></ul>
+    <div id="empty">No sales logged yet</div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const STORAGE_KEY = "liveSalesEntries";
+  const COMMISSION_RATE = 0.02;
+
+  const staffButtons = {
+    Parvana: document.getElementById("staffParvana"),
+    Ghandi: document.getElementById("staffGhandi")
+  };
+  const dateInput = document.getElementById("dateInput");
+  const timeInput = document.getElementById("timeInput");
+  const salesInput = document.getElementById("salesInput");
+  const commissionPreviewAmt = document.getElementById("commissionPreviewAmt");
+  const addBtn = document.getElementById("addBtn");
+  const statusEl = document.getElementById("status");
+  const entryList = document.getElementById("entryList");
+  const emptyEl = document.getElementById("empty");
+  const sumSalesEl = document.getElementById("sumSales");
+  const sumCommissionEl = document.getElementById("sumCommission");
+  const exportBtn = document.getElementById("exportBtn");
+  const clearBtn = document.getElementById("clearBtn");
+  const staffFilter = document.getElementById("staffFilter");
+
+  let selectedStaff = "Parvana";
+  let editingId = null;
+
+  function money(n) {
+    const v = isNaN(n) ? 0 : n;
+    return "RM " + v.toFixed(2);
+  }
+
+  function loadEntries() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveEntries(entries) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+
+  function updateEntry(id, changes) {
+    const entries = loadEntries();
+    const idx = entries.findIndex((e) => e.id === id);
+    if (idx === -1) return;
+    entries[idx] = Object.assign({}, entries[idx], changes);
+    saveEntries(entries);
+  }
+
+  function todayStr() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
+  }
+
+  function nowTimeStr() {
+    const d = new Date();
+    const h = String(d.getHours()).padStart(2, "0");
+    const m = String(d.getMinutes()).padStart(2, "0");
+    return h + ":" + m;
+  }
+
+  function setStaff(name) {
+    selectedStaff = name;
+    Object.keys(staffButtons).forEach((key) => {
+      staffButtons[key].classList.toggle("active", key === name);
+    });
+  }
+
+  function setStatus(msg, kind) {
+    statusEl.textContent = msg || "";
+    statusEl.className = kind ? kind : "";
+  }
+
+  function updateCommissionPreview() {
+    const val = parseFloat(salesInput.value);
+    const commission = isNaN(val) ? 0 : val * COMMISSION_RATE;
+    commissionPreviewAmt.textContent = money(commission);
+  }
+
+  function renderSummary() {
+    const entries = loadEntries();
+    let totalSales = 0;
+    let totalCommission = 0;
+    entries.forEach((e) => {
+      totalSales += e.sales || 0;
+      totalCommission += e.commission || 0;
+    });
+    sumSalesEl.textContent = money(totalSales);
+    sumCommissionEl.textContent = money(totalCommission);
+  }
+
+  function fmtDate(dateStr) {
+    if (!dateStr) return "";
+    const parts = dateStr.split("-");
+    if (parts.length !== 3) return dateStr;
+    return parts[2] + "/" + parts[1] + "/" + parts[0];
+  }
+
+  function renderEntries() {
+    let entries = loadEntries();
+    entries = entries.slice().sort((a, b) => b.createdAt - a.createdAt);
+
+    const filter = staffFilter.value;
+    if (filter) {
+      entries = entries.filter((e) => e.staff === filter);
+    }
+
+    entryList.innerHTML = "";
+    if (entries.length === 0) {
+      emptyEl.style.display = "block";
+      return;
+    }
+    emptyEl.style.display = "none";
+
+    entries.forEach((entry) => {
+      const li = document.createElement("li");
+
+      if (editingId === entry.id) {
+        // ---- edit mode ----
+        const row = document.createElement("div");
+        row.className = "edit-row";
+
+        function field(labelText, type, value, extra) {
+          const wrap = document.createElement("div");
+          wrap.className = "field-wrap";
+          const label = document.createElement("label");
+          label.textContent = labelText;
+          const input = document.createElement("input");
+          input.type = type;
+          input.value = value;
+          if (extra) Object.assign(input, extra);
+          wrap.appendChild(label);
+          wrap.appendChild(input);
+          return { wrap, input };
+        }
+
+        const staffSelWrap = document.createElement("div");
+        staffSelWrap.className = "field-wrap";
+        const staffLabel = document.createElement("label");
+        staffLabel.textContent = "Staff";
+        const staffSelect = document.createElement("select");
+        ["Parvana", "Ghandi"].forEach((n) => {
+          const opt = document.createElement("option");
+          opt.value = n;
+          opt.textContent = n;
+          if (n === entry.staff) opt.selected = true;
+          staffSelect.appendChild(opt);
+        });
+        staffSelWrap.appendChild(staffLabel);
+        staffSelWrap.appendChild(staffSelect);
+
+        const dateField = field("Date", "date", entry.date);
+        const timeField = field("Time", "time", entry.time);
+        const salesField = field("Total Sales (RM)", "number", entry.sales, { min: "0", step: "0.01" });
+
+        const btnRow = document.createElement("div");
+        btnRow.className = "edit-buttons";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.className = "save-btn";
+        saveBtn.textContent = "Save";
+        saveBtn.addEventListener("click", () => {
+          const newSales = parseFloat(salesField.input.value);
+          const finalSales = isNaN(newSales) || newSales < 0 ? entry.sales : newSales;
+          updateEntry(entry.id, {
+            staff: staffSelect.value,
+            date: dateField.input.value || entry.date,
+            time: timeField.input.value || entry.time,
+            sales: finalSales,
+            commission: Math.round(finalSales * COMMISSION_RATE * 100) / 100
+          });
+          editingId = null;
+          renderEntries();
+          renderSummary();
+        });
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.className = "cancel-btn";
+        cancelBtn.textContent = "Cancel";
+        cancelBtn.addEventListener("click", () => {
+          editingId = null;
+          renderEntries();
+        });
+
+        btnRow.appendChild(saveBtn);
+        btnRow.appendChild(cancelBtn);
+        row.appendChild(staffSelWrap);
+        row.appendChild(dateField.wrap);
+        row.appendChild(timeField.wrap);
+        row.appendChild(salesField.wrap);
+        row.appendChild(btnRow);
+        li.appendChild(row);
+      } else {
+        // ---- display mode ----
+        const info = document.createElement("div");
+        info.className = "info";
+
+        const nameDiv = document.createElement("div");
+        nameDiv.className = "staffName";
+        nameDiv.textContent = entry.staff;
+
+        const dtDiv = document.createElement("div");
+        dtDiv.className = "dt";
+        dtDiv.textContent = fmtDate(entry.date) + " · " + (entry.time || "");
+
+        const amtsDiv = document.createElement("div");
+        amtsDiv.className = "amts";
+        const salesSpan = document.createElement("span");
+        salesSpan.className = "sales";
+        salesSpan.textContent = "Sales: " + money(entry.sales);
+        const commSpan = document.createElement("span");
+        commSpan.className = "comm";
+        commSpan.textContent = "Comm: " + money(entry.commission);
+        amtsDiv.appendChild(salesSpan);
+        amtsDiv.appendChild(commSpan);
+
+        info.appendChild(nameDiv);
+        info.appendChild(dtDiv);
+        info.appendChild(amtsDiv);
+
+        const actions = document.createElement("div");
+        actions.className = "item-actions";
+
+        const editBtn = document.createElement("button");
+        editBtn.className = "edit";
+        editBtn.textContent = "✎";
+        editBtn.addEventListener("click", () => {
+          editingId = entry.id;
+          renderEntries();
+        });
+
+        const delBtn = document.createElement("button");
+        delBtn.className = "del";
+        delBtn.textContent = "✕";
+        delBtn.addEventListener("click", () => {
+          const remaining = loadEntries().filter((e) => e.id !== entry.id);
+          saveEntries(remaining);
+          renderEntries();
+          renderSummary();
+        });
+
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+
+        li.appendChild(info);
+        li.appendChild(actions);
+      }
+
+      entryList.appendChild(li);
+    });
+  }
+
+  function addEntry() {
+    const sales = parseFloat(salesInput.value);
+    if (isNaN(sales) || sales < 0) {
+      setStatus("Enter a valid sales amount", "err");
+      return;
+    }
+    const date = dateInput.value || todayStr();
+    const time = timeInput.value || nowTimeStr();
+    const commission = Math.round(sales * COMMISSION_RATE * 100) / 100;
+
+    const entries = loadEntries();
+    entries.push({
+      id: Date.now() + "-" + Math.random().toString(36).slice(2),
+      staff: selectedStaff,
+      date: date,
+      time: time,
+      sales: sales,
+      commission: commission,
+      createdAt: Date.now()
+    });
+    saveEntries(entries);
+
+    salesInput.value = "";
+    updateCommissionPreview();
+    renderEntries();
+    renderSummary();
+    setStatus(selectedStaff + "'s sale of " + money(sales) + " logged (commission " + money(commission) + ")", "ok");
+  }
+
+  function exportCsv() {
+    const entries = loadEntries().slice().sort((a, b) => a.createdAt - b.createdAt);
+    if (entries.length === 0) {
+      setStatus("Nothing to export", "err");
+      return;
+    }
+    let csv = "staff,date,time,total_sales,commission\n";
+    entries.forEach((e) => {
+      csv += `"${e.staff}","${e.date}","${e.time}","${e.sales.toFixed(2)}","${e.commission.toFixed(2)}"\n`;
+    });
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "live-sales.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  staffButtons.Parvana.addEventListener("click", () => setStaff("Parvana"));
+  staffButtons.Ghandi.addEventListener("click", () => setStaff("Ghandi"));
+  salesInput.addEventListener("input", updateCommissionPreview);
+  addBtn.addEventListener("click", addEntry);
+  exportBtn.addEventListener("click", exportCsv);
+  clearBtn.addEventListener("click", () => {
+    if (confirm("Clear all logged sales? This cannot be undone.")) {
+      saveEntries([]);
+      renderEntries();
+      renderSummary();
+    }
+  });
+  staffFilter.addEventListener("change", renderEntries);
+
+  // defaults
+  dateInput.value = todayStr();
+  timeInput.value = nowTimeStr();
+  setStaff("Parvana");
+  updateCommissionPreview();
+  renderEntries();
+  renderSummary();
+})();
+</script>
+</body>
+</html>
