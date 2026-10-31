@@ -366,9 +366,10 @@
   <div id="staffSelector">
     <button id="staffParvana" data-name="Parvana">Parvana</button>
     <button id="staffGhandi" data-name="Ghandi">Ghandi</button>
+    <button id="staffThurga" data-name="Thurga">Thurga</button>
   </div>
 
-  <div id="lockNotice">🔒 Select your name above and enter your PIN to see and log your sales. Your numbers stay private from the other staff member.</div>
+  <div id="lockNotice">🔒 Select your name above and enter your PIN to see and log your sales. Your numbers stay private from the other staff members.</div>
 
   <div id="switchUserRow"><button id="switchUserBtn">Switch user / Lock</button></div>
 
@@ -457,12 +458,13 @@
   const SHEET_URL_KEY = "liveSalesSheetUrl";
   const PIN_PREFIX = "liveSalesPin_";
   const COMMISSION_RATE = 0.02;
-  const STAFF_NAMES = ["Parvana", "Ghandi"];
+  const STAFF_NAMES = ["Parvana", "Ghandi", "Thurga"];
 
   const settingsBtn = document.getElementById("settingsBtn");
   const staffButtons = {
     Parvana: document.getElementById("staffParvana"),
-    Ghandi: document.getElementById("staffGhandi")
+    Ghandi: document.getElementById("staffGhandi"),
+    Thurga: document.getElementById("staffThurga")
   };
   const lockNotice = document.getElementById("lockNotice");
   const switchUserRow = document.getElementById("switchUserRow");
@@ -521,7 +523,7 @@
   }
 
   function otherStaff(name) {
-    return STAFF_NAMES.find((n) => n !== name) || "the other staff";
+    return STAFF_NAMES.filter((n) => n !== name).join(" and ") || "the other staff";
   }
 
   function lockAll() {
@@ -901,6 +903,7 @@
   settingsBtn.addEventListener("click", openSettings);
   staffButtons.Parvana.addEventListener("click", () => selectStaff("Parvana"));
   staffButtons.Ghandi.addEventListener("click", () => selectStaff("Ghandi"));
+  staffButtons.Thurga.addEventListener("click", () => selectStaff("Thurga"));
   switchUserBtn.addEventListener("click", lockAll);
   salesInput.addEventListener("input", updateCommissionPreview);
   addBtn.addEventListener("click", addEntry);
